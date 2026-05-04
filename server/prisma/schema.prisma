@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProgramStatus {
+  draft
+  active
+  completed
+  archived
+}
+
+enum ProjectStatus {
+  draft
+  active
+  paused
+  completed
+}
+
+enum JobStatus {
+  active
+  paused
+  completed
+}
+
+enum RunStatus {
+  queued
+  running
+  passed
+  failed
+  cancelled
+  error
+}
+
+enum TestResultStatus {
+  pass
+  fail
+  skip
+}
+
+enum UserRole {
+  admin
+  tester
+  viewer
+  external
+}
+
+enum TeamType {
+  internal
+  development
+  external
+}
+
+enum UserAccountStatus {
+  active
+  invited
+  disabled
+}
+
+enum SuiteSeverity {
+  critical
+  high
+  medium
+  low
+}
+
+model Program {
+  id              String        @id @default(uuid())
+  name            String
+  description     String?
+  manager         String?
+  budget          Decimal?      @db.Decimal(14, 2)
+  certAgency      String?       @map("cert_agency")
+  startDate       DateTime?     @map("start_date") @db.Date
+  targetEndDate   DateTime?     @map("target_end_date") @db.Date
+  roadmapId       String?       @map("roadmap_id")
+  status          ProgramStatus @default(draft)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  roadmap   Roadmap?  @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  projects  Project[]
+
+  @@map("programs")
+}
+
+model Roadmap {
+  id         String    @id @default(uuid())
+  programId  String?   @map("program_id")
+  templateId String?   @map("template_id")
+  name       String
+  canvasJson Json      @default("{}") @map("canvas_json")
+  isCustom   Boolean @default(false) @map("is_custom")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  programs Program[]
+
+  @@map("roadmaps")
+}
+
+model Project {
+  id                 String         @id @default(uuid())
+  programId          String         @map("program_id")
+  name               String
+  description        String?
+  targetProduct      String         @map("target_product")
+  environment        String
+  status             ProjectStatus  @default(draft)
+  autoCreateTickets  Boolean        @default(true) @map("auto_create_tickets")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  program        Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  scheduledJobs  ScheduledJob[]
+
+  @@map("projects")
+}
+
+model TestSuite {
+  id          String        @id @default(uuid())
+  name        String
+  category    String
+  description String?
+  tools       String?
+  focusAreas  String?       @map("focus_areas")
+  kpiJson     Json          @default("{}") @map("kpi_json")
+  scope       String?
+  standards   String?
+  severity    SuiteSeverity @default(medium)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  scheduledJobs ScheduledJob[]
+
+  @@map("test_suites")
+}
+
+model ScheduledJob {
+  id          String    @id @default(uuid())
+  projectId   String    @map("project_id")
+  suiteId     String    @map("suite_id")
+  fromDate    DateTime  @map("from_date") @db.Date
+  toDate      DateTime  @map("to_date") @db.Date
+  time        String
+  recurrence  String
+  status      JobStatus @default(active)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  suite    TestSuite @relation(fields: [suiteId], references: [id], onDelete: Restrict)
+  testRuns TestRun[]
+
+  @@map("scheduled_jobs")
+}
+
+model TestRun {
+  id          String    @id @default(uuid())
+  jobId       String    @map("job_id")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  status      RunStatus @default(queued)
+  runnerType  String    @map("runner_type")
+  containerId String?   @map("container_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  job          ScheduledJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  testResults  TestResult[]
+
+  @@map("test_runs")
+}
+
+model TestResult {
+  id            String           @id @default(uuid())
+  runId         String           @map("run_id")
+  testName      String           @map("test_name")
+  status        TestResultStatus
+  durationMs    Int?             @map("duration_ms")
+  errorMsg      String?          @map("error_msg")
+  screenshotUrl String?        @map("screenshot_url")
+  logUrl        String?          @map("log_url")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  run              TestRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ticketBridgeLogs TicketBridgeLog[]
+
+  @@map("test_results")
+}
+
+model TicketBridgeLog {
+  id          String   @id @default(uuid())
+  resultId    String   @map("result_id")
+  sdTicketId  Int      @map("sd_ticket_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  payloadJson Json     @map("payload_json")
+
+  result TestResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  @@unique([resultId])
+  @@map("ticket_bridge_log")
+}
+
+model User {
+  id           String              @id @default(uuid())
+  name         String
+  email        String              @unique
+  passwordHash String              @map("password_hash")
+  role         UserRole            @default(viewer)
+  teamType     TeamType            @default(internal) @map("team_type")
+  status       UserAccountStatus   @default(active)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model IntegrationSetting {
+  id                   String   @id @default(uuid())
+  supportDeskUrl       String?  @map("support_desk_url")
+  autoTicketGlobal     Boolean  @default(true) @map("auto_ticket_global")
+  lastHealthCheckAt    DateTime? @map("last_health_check_at")
+  lastHealthCheckOk    Boolean? @map("last_health_check_ok")
+  ticketsCreatedCount  Int      @default(0) @map("tickets_created_count")
+  bridgeErrorCount     Int      @default(0) @map("bridge_error_count")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("integration_settings")
+}
+
+model BridgeRetryQueue {
+  id        String   @id @default(uuid())
+  payload   Json
+  attempts  Int      @default(0)
+  lastError String?  @map("last_error")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bridge_retry_queue")
+}

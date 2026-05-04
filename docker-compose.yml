@@ -1,0 +1,121 @@
+services:
+  testhub-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - testhub-server
+    environment:
+      - VITE_API_URL=http://localhost:3002
+
+  testhub-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgres://testhub:secret@postgres:5432/testhub
+      REDIS_URL: redis://redis:6379
+      SUPPORT_DESK_URL: http://support-desk:3001
+      JWT_SECRET: change-me-in-production-use-long-random-string
+      PORT: "3002"
+      NODE_ENV: production
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: testhub-artifacts
+      DOCKER_SOCKET_PATH: /var/run/docker.sock
+      RESULTS_VOLUME_NAME: testhub_test-results
+      AI_AGENT_URL: http://ai-agent:8000
+      USE_DOCKER_RUNNERS: "false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+      support-desk:
+        condition: service_started
+
+  support-desk:
+    build: ./support-desk
+    ports:
+      - "3001:3001"
+    volumes:
+      - support-desk-db:/app/data
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: testhub
+      POSTGRES_USER: testhub
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testhub -d testhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+
+  ai-agent:
+    build: ./agent
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://testhub:secret@postgres:5432/testhub
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  playwright-runner:
+    build: ./runners/playwright
+    profiles: ["runners"]
+    volumes:
+      - test-results:/results
+
+  cypress-runner:
+    build: ./runners/cypress
+    profiles: ["runners"]
+    volumes:
+      - test-results:/results
+
+  python-runner:
+    build: ./runners/python
+    profiles: ["runners"]
+    volumes:
+      - test-results:/results
+
+volumes:
+  pgdata:
+  minio-data:
+  test-results:
+  support-desk-db:
