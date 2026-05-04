@@ -1,7 +1,9 @@
-import { Box, Button, Stack, Switch, TextField, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import { Box, Button, Stack, Switch, TextField, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Chip } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { http } from "../api/http";
+import { PageHeader } from "../components/ui/PageHeader";
+import { SectionShell } from "../components/ui/SectionShell";
 
 interface Settings {
   id?: string;
@@ -49,13 +51,8 @@ export default function IntegrationsPage(): JSX.Element {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={900} gutterBottom>
-        Integrations
-      </Typography>
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography fontWeight={700} gutterBottom>
-          Support Desk connection
-        </Typography>
+      <PageHeader title="Integrations" subtitle="Configure support desk bridging and monitor delivery health." />
+      <SectionShell title="Support Desk connection" description="Configuration, health checks, and automated ticketing preferences.">
         <Stack spacing={2} maxWidth={720}>
           <TextField
             label="Support Desk base URL"
@@ -82,29 +79,34 @@ export default function IntegrationsPage(): JSX.Element {
             Tickets created (counter): {form.ticketsCreatedCount ?? 0} · Bridge errors: {form.bridgeErrorCount ?? 0}
           </Typography>
         </Stack>
-      </Paper>
+      </SectionShell>
 
-      <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-        Ticket bridge audit log
-      </Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>When</TableCell>
-            <TableCell>SD ticket</TableCell>
-            <TableCell>Test</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {(logs ?? []).map((l) => (
-            <TableRow key={l.id}>
-              <TableCell>{new Date(l.createdAt).toLocaleString()}</TableCell>
-              <TableCell>{l.sdTicketId}</TableCell>
-              <TableCell>{l.result?.testName}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Paper sx={{ p: 2, mt: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+          <Typography variant="h6">Ticket bridge audit log</Typography>
+          <Chip size="small" label={`${logs?.length ?? 0} entries`} variant="outlined" />
+        </Stack>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>When</TableCell>
+                <TableCell>SD ticket</TableCell>
+                <TableCell>Test</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(logs ?? []).map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell>{new Date(l.createdAt).toLocaleString()}</TableCell>
+                  <TableCell>{l.sdTicketId}</TableCell>
+                  <TableCell>{l.result?.testName}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     </Box>
   );
 }

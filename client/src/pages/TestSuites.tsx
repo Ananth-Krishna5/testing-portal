@@ -18,6 +18,9 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { http } from "../api/http";
+import { EmptyState } from "../components/ui/EmptyState";
+import { FilterBar } from "../components/ui/FilterBar";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface Suite {
   id: string;
@@ -75,13 +78,8 @@ export default function TestSuitesPage(): JSX.Element {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={900} gutterBottom>
-        Test Suites
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 2 }}>
-        {subtitle}
-      </Typography>
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2 }}>
+      <PageHeader title="Test Suites" subtitle={subtitle} />
+      <FilterBar>
         <TextField label="Search" value={q} onChange={(e) => setQ(e.target.value)} fullWidth />
         <TextField select label="Category" value={cat} onChange={(e) => setCat(e.target.value)} sx={{ minWidth: 220 }}>
           <MenuItem value="">All</MenuItem>
@@ -91,14 +89,15 @@ export default function TestSuitesPage(): JSX.Element {
             </MenuItem>
           ))}
         </TextField>
-      </Stack>
+      </FilterBar>
 
+      {(data ?? []).length === 0 && <EmptyState title="No suites found" message="Try broadening your search or changing the selected category." />}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3,1fr)" }, gap: 2 }}>
         {(data ?? []).map((s) => (
           <Card key={s.id} variant="outlined">
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="start" spacing={1}>
-                <Typography variant="h6" fontWeight={800}>
+                <Typography variant="h6">
                   {s.name}
                 </Typography>
                 <Chip size="small" label={s.category} />

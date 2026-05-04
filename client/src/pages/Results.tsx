@@ -7,6 +7,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Typography,
   Paper,
 } from "@mui/material";
@@ -14,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { http } from "../api/http";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface TestResultRow {
   id: string;
@@ -48,9 +51,7 @@ export default function ResultsPage(): JSX.Element {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={900} gutterBottom>
-        Results
-      </Typography>
+      <PageHeader title="Results" subtitle="Execution outcomes, distribution, and failure signals." />
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         {["", "pass", "fail", "skip"].map((s) => (
           <Chip key={s || "all"} label={s ? s : "All"} color={status === s ? "primary" : "default"} onClick={() => setStatus(s)} variant={status === s ? "filled" : "outlined"} />
@@ -73,30 +74,36 @@ export default function ResultsPage(): JSX.Element {
           </ResponsiveContainer>
         </Box>
       </Paper>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Test</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Project / Suite</TableCell>
-            <TableCell>Ticket</TableCell>
-            <TableCell>Error</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {(data ?? []).map((r) => (
-            <TableRow key={r.id}>
-              <TableCell>{r.testName}</TableCell>
-              <TableCell>{r.status}</TableCell>
-              <TableCell>
-                {r.run?.job?.project?.name} / {r.run?.job?.suite?.name}
-              </TableCell>
-              <TableCell>{r.ticketBridgeLogs?.[0]?.sdTicketId ?? "—"}</TableCell>
-              <TableCell sx={{ maxWidth: 360, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.errorMsg}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {(data ?? []).length === 0 ? (
+        <EmptyState title="No results to display" message="Run a suite or remove filters to populate this table." />
+      ) : (
+        <TableContainer component={Paper}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Test</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Project / Suite</TableCell>
+                <TableCell>Ticket</TableCell>
+                <TableCell>Error</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(data ?? []).map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>{r.testName}</TableCell>
+                  <TableCell>{r.status}</TableCell>
+                  <TableCell>
+                    {r.run?.job?.project?.name} / {r.run?.job?.suite?.name}
+                  </TableCell>
+                  <TableCell>{r.ticketBridgeLogs?.[0]?.sdTicketId ?? "—"}</TableCell>
+                  <TableCell sx={{ maxWidth: 360, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.errorMsg}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
 }

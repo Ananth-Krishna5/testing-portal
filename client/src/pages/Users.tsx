@@ -12,12 +12,16 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   TextField,
   Typography,
+  Paper,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { http } from "../api/http";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface UserRow {
   id: string;
@@ -47,36 +51,43 @@ export default function UsersPage(): JSX.Element {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h4" fontWeight={900}>
-          Users & teams
-        </Typography>
-        <Button variant="contained" onClick={() => setOpen(true)}>
-          Invite member
-        </Button>
-      </Stack>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Role</TableCell>
-            <TableCell>Team</TableCell>
-            <TableCell>Status</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {(data ?? []).map((u) => (
-            <TableRow key={u.id}>
-              <TableCell>{u.name}</TableCell>
-              <TableCell>{u.email}</TableCell>
-              <TableCell>{u.role}</TableCell>
-              <TableCell>{u.teamType}</TableCell>
-              <TableCell>{u.status}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <PageHeader
+        title="Users & teams"
+        subtitle="Manage roles and workspace access."
+        action={
+          <Button variant="contained" onClick={() => setOpen(true)}>
+            Invite member
+          </Button>
+        }
+      />
+      {(data ?? []).length === 0 ? (
+        <EmptyState title="No members found" message="Invite a member to start assigning test ownership." />
+      ) : (
+        <TableContainer component={Paper}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Team</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(data ?? []).map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell>{u.name}</TableCell>
+                  <TableCell>{u.email}</TableCell>
+                  <TableCell>{u.role}</TableCell>
+                  <TableCell>{u.teamType}</TableCell>
+                  <TableCell>{u.status}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Invite workspace member</DialogTitle>

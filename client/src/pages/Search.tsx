@@ -1,5 +1,7 @@
-import { Box, Divider, List, ListItemButton, ListItemText, Typography } from "@mui/material";
+import { Box, Divider, List, ListItemButton, ListItemText, Typography, Paper } from "@mui/material";
 import { useLocation, Link as RouterLink } from "react-router-dom";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface SearchState {
   programs?: { id: string; name: string }[];
@@ -11,12 +13,13 @@ interface SearchState {
 export default function SearchPage(): JSX.Element {
   const loc = useLocation();
   const s = (loc.state ?? {}) as SearchState;
+  const total = (s.programs?.length ?? 0) + (s.projects?.length ?? 0) + (s.suites?.length ?? 0) + (s.users?.length ?? 0);
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={900} gutterBottom>
-        Search results
-      </Typography>
+      <PageHeader title="Search results" subtitle="Global results grouped by module." />
+      {total === 0 && <EmptyState title="No results" message="Try a broader search phrase from the global search bar." />}
+      <Paper sx={{ p: 2 }}>
       <Typography color="text.secondary" sx={{ mb: 2 }}>
         Programs
       </Typography>
@@ -60,6 +63,7 @@ export default function SearchPage(): JSX.Element {
           </ListItemButton>
         ))}
       </List>
+      </Paper>
     </Box>
   );
 }

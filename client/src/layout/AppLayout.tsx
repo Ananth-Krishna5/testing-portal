@@ -2,6 +2,7 @@ import {
   AppBar,
   Avatar,
   Box,
+  Chip,
   CssBaseline,
   Divider,
   Drawer,
@@ -31,6 +32,9 @@ import {
   Search as SearchIcon,
   Shield as ShieldIcon,
   ViewKanban as KanbanIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
+  NotificationsNone as NotificationsIcon,
 } from "@mui/icons-material";
 import { useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -75,14 +79,14 @@ export function AppLayout({
 
   const drawer = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar sx={{ gap: 1 }}>
+      <Toolbar sx={{ gap: 1, px: 2.5 }}>
         <HubIcon color="primary" />
-        <Typography fontWeight={800} variant="h6">
+        <Typography variant="h6">
           Test Hub
         </Typography>
       </Toolbar>
       <Divider />
-      <List sx={{ flex: 1, px: 1, py: 2 }}>
+      <List sx={{ flex: 1, px: 1.5, py: 2 }}>
         {nav
           .filter((n) => !n.roles || n.roles.some((r) => can(r as "admin" | "tester" | "viewer" | "external")))
           .map((item) => (
@@ -92,6 +96,7 @@ export function AppLayout({
               to={item.to}
               selected={loc.pathname === item.to}
               onClick={() => setMobileOpen(false)}
+              sx={{ mb: 0.5 }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.label} />
@@ -99,11 +104,11 @@ export function AppLayout({
           ))}
       </List>
       <Divider />
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2.5 }}>
         <Typography variant="caption" color="text.secondary">
           Signed in as
         </Typography>
-        <Typography fontWeight={600}>{user?.name}</Typography>
+        <Typography sx={{ mt: 0.5 }}>{user?.name}</Typography>
         <Typography variant="body2" color="text.secondary">
           {user?.role}
         </Typography>
@@ -126,7 +131,7 @@ export function AppLayout({
           ml: { md: `${drawerWidth}px` },
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ gap: 1 }}>
           <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ mr: 2, display: { md: "none" } }}>
             <MenuIcon />
           </IconButton>
@@ -136,7 +141,7 @@ export function AppLayout({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            sx={{ flex: 1, maxWidth: 480 }}
+            sx={{ flex: 1, maxWidth: 520 }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -145,9 +150,10 @@ export function AppLayout({
               ),
             }}
           />
+          <Chip size="small" icon={<NotificationsIcon fontSize="small" />} label="Alerts" variant="outlined" sx={{ display: { xs: "none", sm: "inline-flex" } }} />
           <Tooltip title={mode === "dark" ? "Light mode" : "Dark mode"}>
             <IconButton onClick={onToggleMode} sx={{ ml: 1 }}>
-              {mode === "dark" ? "☀️" : "🌙"}
+              {mode === "dark" ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
           <IconButton sx={{ ml: 1 }} onClick={(e) => setAnchor(e.currentTarget)}>
@@ -175,7 +181,7 @@ export function AppLayout({
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: "block", md: "none" } }}
+          sx={{ display: { xs: "block", md: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
         >
           {drawer}
         </Drawer>
@@ -194,17 +200,14 @@ export function AppLayout({
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+            p: { xs: 2, md: 3 },
           width: { md: `calc(100% - ${drawerWidth}px)` },
           mt: 8,
-          background: (t) =>
-            t.palette.mode === "dark"
-              ? "radial-gradient(1200px 600px at 20% -10%, rgba(108,99,255,0.12), transparent), #0f1117"
-              : "radial-gradient(1200px 600px at 20% -10%, rgba(92,84,214,0.08), transparent), #f4f6fb",
+            backgroundColor: "background.default",
           minHeight: "100vh",
         }}
       >
-        {children}
+        <Box sx={{ maxWidth: 1320, mx: "auto", width: "100%" }}>{children}</Box>
       </Box>
     </Box>
   );

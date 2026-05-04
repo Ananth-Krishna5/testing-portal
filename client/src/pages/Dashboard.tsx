@@ -4,7 +4,6 @@ import {
   AccordionSummary,
   Box,
   Card,
-  CardContent,
   Chip,
   Stack,
   Typography,
@@ -15,6 +14,9 @@ import { useEffect, useState } from "react";
 import { http, wsUrl } from "../api/http";
 import { useAuth } from "../auth/AuthContext";
 import { AiChatPanel } from "../components/AiChatPanel";
+import { MetricCard } from "../components/ui/MetricCard";
+import { PageHeader } from "../components/ui/PageHeader";
+import { SectionShell } from "../components/ui/SectionShell";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface Kpis {
@@ -64,18 +66,14 @@ export default function DashboardPage(): JSX.Element {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight={900} gutterBottom>
-        Dashboard
-      </Typography>
-      {live && (
-        <Chip sx={{ mb: 2 }} color="primary" label={`Live: ${live}`} onDelete={() => setLive(null)} />
-      )}
+      <PageHeader title="Dashboard" subtitle="Portfolio performance and execution signals." />
+      {live && <Chip sx={{ mb: 2 }} color="primary" label={`Live: ${live}`} onDelete={() => setLive(null)} />}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 2 }}>
         <Box>
           <Stack spacing={2}>
             <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={700}>Overview</Typography>
+                <Typography>Overview</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4,1fr)" }, gap: 2 }}>
@@ -84,37 +82,23 @@ export default function DashboardPage(): JSX.Element {
                     { label: "Projects", v: data?.overview.projects ?? "—" },
                     { label: "Users", v: data?.overview.users ?? "—" },
                     { label: "Test Suites", v: data?.overview.suites ?? "—" },
-                  ].map((k) => (
-                    <Card variant="outlined" key={k.label}>
-                      <CardContent>
-                        <Typography color="text.secondary" variant="body2">
-                          {k.label}
-                        </Typography>
-                        <Typography variant="h4" fontWeight={800}>
-                          {k.v}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  ].map((k) => <MetricCard key={k.label} label={k.label} value={k.v} />)}
                 </Box>
               </AccordionDetails>
             </Accordion>
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={700}>Program & project metrics</Typography>
+                <Typography>Program & project metrics</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Typography variant="body2" color="text.secondary">
-                  Portfolio health is driven by scheduled jobs, recent runs, and bridge activity. Use Programs and Projects
-                  modules for detail.
-                </Typography>
+                <SectionShell title="Operational context" description="Portfolio health is driven by scheduled jobs, recent runs, and bridge activity. Use Programs and Projects modules for detailed controls." />
               </AccordionDetails>
             </Accordion>
 
             <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={700}>Results distribution</Typography>
+                <Typography>Results distribution</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box sx={{ width: "100%", height: 280 }}>
@@ -134,7 +118,7 @@ export default function DashboardPage(): JSX.Element {
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={700}>Recent runs trend</Typography>
+                <Typography>Recent runs trend</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box sx={{ width: "100%", height: 260 }}>
@@ -153,12 +137,14 @@ export default function DashboardPage(): JSX.Element {
 
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography fontWeight={700}>Integration & tickets</Typography>
+                <Typography>Integration & tickets</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Typography variant="body2">
-                  Tickets bridged from failed tests: <strong>{data?.integration.ticketsBridged ?? 0}</strong>
-                </Typography>
+                <Card variant="outlined">
+                  <Typography variant="body2" sx={{ p: 2 }}>
+                    Tickets bridged from failed tests: <strong>{data?.integration.ticketsBridged ?? 0}</strong>
+                  </Typography>
+                </Card>
               </AccordionDetails>
             </Accordion>
           </Stack>

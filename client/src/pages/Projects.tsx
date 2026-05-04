@@ -19,6 +19,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { http } from "../api/http";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface Project {
   id: string;
@@ -115,20 +117,22 @@ export default function ProjectsPage(): JSX.Element {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h4" fontWeight={900}>
-          Projects
-        </Typography>
-        <Button variant="contained" onClick={() => setWizardOpen(true)}>
-          New project (wizard)
-        </Button>
-      </Stack>
+      <PageHeader
+        title="Projects"
+        subtitle="Step-driven project creation and execution control."
+        action={
+          <Button variant="contained" onClick={() => setWizardOpen(true)}>
+            New project (wizard)
+          </Button>
+        }
+      />
 
+      {(projects ?? []).length === 0 && <EmptyState title="No projects yet" message="Use the wizard to create your first project and schedule suites." />}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
         {(projects ?? []).map((p) => (
           <Card key={p.id} variant="outlined">
             <CardContent>
-              <Typography variant="h6" fontWeight={800}>
+              <Typography variant="h6">
                 {p.name}
               </Typography>
               <Typography color="text.secondary" variant="body2">
@@ -156,7 +160,7 @@ export default function ProjectsPage(): JSX.Element {
       </Box>
 
       <Dialog open={wizardOpen} onClose={() => setWizardOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>Project wizard</DialogTitle>
+        <DialogTitle>Project wizard (5 steps)</DialogTitle>
         <DialogContent>
           <Stepper activeStep={step} sx={{ my: 2 }}>
             {steps.map((label) => (

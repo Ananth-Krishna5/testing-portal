@@ -18,6 +18,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { http } from "../api/http";
 import { RoadmapCanvas } from "../components/RoadmapCanvas";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PageHeader } from "../components/ui/PageHeader";
 
 interface Program {
   id: string;
@@ -55,37 +57,37 @@ export default function ProgramsPage(): JSX.Element {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="h4" fontWeight={900}>
-          Programs
-        </Typography>
-        <Button variant="contained" onClick={() => setOpen(true)}>
-          New program
-        </Button>
-      </Stack>
-      {isLoading && <Typography>Loading…</Typography>}
+      <PageHeader
+        title="Programs"
+        subtitle="Portfolio cards with roadmap context."
+        action={
+          <Button variant="contained" onClick={() => setOpen(true)}>
+            New program
+          </Button>
+        }
+      />
+      {isLoading && <Typography color="text.secondary">Loading...</Typography>}
+      {!isLoading && (data ?? []).length === 0 && <EmptyState title="No programs yet" message="Create a program to begin organizing projects and roadmaps." />}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
         {(data ?? []).map((p) => (
           <Card variant="outlined" sx={{ height: "100%" }} key={p.id}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={800}>
-                  {p.name}
-                </Typography>
-                <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
-                  {p.description}
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Chip label={p.status} size="small" />
-                  <Chip label={`${p._count?.projects ?? 0} projects`} size="small" variant="outlined" />
-                </Stack>
-                {p.roadmap && (
-                  <Box sx={{ mt: 2 }}>
-                    <RoadmapCanvas title={p.roadmap.name} canvas={p.roadmap.canvasJson} />
-                  </Box>
-                )}
-              </CardContent>
-              <CardActions />
-            </Card>
+            <CardContent>
+              <Typography variant="h6">{p.name}</Typography>
+              <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
+                {p.description}
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Chip label={p.status} size="small" />
+                <Chip label={`${p._count?.projects ?? 0} projects`} size="small" variant="outlined" />
+              </Stack>
+              {p.roadmap && (
+                <Box sx={{ mt: 2 }}>
+                  <RoadmapCanvas title={p.roadmap.name} canvas={p.roadmap.canvasJson} />
+                </Box>
+              )}
+            </CardContent>
+            <CardActions />
+          </Card>
         ))}
       </Box>
 
