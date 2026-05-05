@@ -1,22 +1,24 @@
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   MenuItem,
+  Paper,
+  Skeleton,
   Stack,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
-  TableContainer,
   TextField,
-  Typography,
-  Paper,
 } from "@mui/material";
+import { People24Regular } from "@fluentui/react-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { http } from "../api/http";
@@ -34,7 +36,7 @@ interface UserRow {
 
 export default function UsersPage(): JSX.Element {
   const qc = useQueryClient();
-  const { data } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: ["users"],
     queryFn: async () => (await http.get<UserRow[]>("/users")).data,
   });
@@ -50,7 +52,7 @@ export default function UsersPage(): JSX.Element {
   });
 
   return (
-    <Box>
+    <Box className="app-page-enter">
       <PageHeader
         title="Users & teams"
         subtitle="Manage roles and workspace access."
@@ -60,10 +62,8 @@ export default function UsersPage(): JSX.Element {
           </Button>
         }
       />
-      {(data ?? []).length === 0 ? (
-        <EmptyState title="No members found" message="Invite a member to start assigning test ownership." />
-      ) : (
-        <TableContainer component={Paper}>
+      {isPending ? (
+        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: "var(--app-radius-md)", borderColor: "var(--app-border-light)" }}>
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -75,13 +75,52 @@ export default function UsersPage(): JSX.Element {
               </TableRow>
             </TableHead>
             <TableBody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 5 }).map((__, j) => (
+                    <TableCell key={j}>
+                      <Skeleton />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (data ?? []).length === 0 ? (
+        <EmptyState title="No members found" message="Invite a member to start assigning test ownership." illustration={People24Regular}>
+          <Button variant="contained" onClick={() => setOpen(true)}>
+            Invite member
+          </Button>
+        </EmptyState>
+      ) : (
+        <TableContainer component={Paper} className="app-scroll" sx={{ maxHeight: 520, borderRadius: "var(--app-radius-md)", border: "1px solid var(--app-border-light)" }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Team</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {(data ?? []).map((u) => (
-                <TableRow key={u.id}>
+                <TableRow key={u.id} hover>
                   <TableCell>{u.name}</TableCell>
                   <TableCell>{u.email}</TableCell>
-                  <TableCell>{u.role}</TableCell>
-                  <TableCell>{u.teamType}</TableCell>
-                  <TableCell>{u.status}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={u.role}
+                      color={u.role === "admin" ? "primary" : u.role === "tester" ? "secondary" : "default"}
+                      variant="outlined"
+                      sx={{ borderRadius: "var(--app-radius-xs)", textTransform: "capitalize" }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ textTransform: "capitalize" }}>{u.teamType}</TableCell>
+                  <TableCell sx={{ textTransform: "capitalize" }}>{u.status}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -111,10 +150,12 @@ export default function UsersPage(): JSX.Element {
             </TextField>
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <Button variant="outlined" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
           <Button variant="contained" disabled={!form.email || !form.name || create.isPending} onClick={() => create.mutate()}>
-            Create
+            Send invite
           </Button>
         </DialogActions>
       </Dialog>

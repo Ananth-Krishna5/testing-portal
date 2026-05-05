@@ -1,0 +1,111 @@
+// =============================================================================
+// Design tokens — ported from Archive 6 src/scss/index.scss (read-only source).
+// Single source of truth for all visual tokens used by Testing Portal.
+// =============================================================================
+//
+// Spacing scale (MUI default, 8px base unit; sx={{ p: N }} → N * 8px):
+//   0.25 = 2px, 0.5 = 4px, 0.75 = 6px,
+//   1    = 8px, 1.5 = 12px,
+//   2    = 16px, 2.5 = 20px,
+//   3    = 24px, 4   = 32px,
+//   5    = 40px, 6   = 48px,
+//   8    = 64px, 10  = 80px.
+// All padding / margin / gap should use this scale via MUI `sx` units.
+// Avoid raw px values for spacing.
+//
+// Border-radius scale (px) — exposed as CSS vars below:
+//   xs = 10, sm = 12, md = 16, lg = 20, xl = 28.
+// `--app-radius-briefing-inner` and `--app-radius-toolkit-inner` are derived
+// inset values for concentric corners on padded containers.
+//
+// Typography scale (anchored to MUI theme; values from Archive 6):
+//   h5 / h6  : 14px / 20px line-height / weight 600  (display stack)
+//   body1/2  : 13.5px / 20px / weight 400            (sans stack)
+//   button   : 13.5px / 20px / weight 590            (sans stack, no transform)
+//   overline : 13.5px / 20px / weight 400            (no transform)
+// Headings use `--app-font-display`; body uses `--app-font-sans`.
+//
+// Color palette (light only — Archive 6 has no dark variant):
+//   primary       #0078d4   error #c50f1f
+//   bg.default    #f0eae5   bg.paper #f9f7f5
+//   text.primary  #272727   text.secondary #424242
+//   divider       #e8ded6   left-nav-bg     #e8ded6
+//   border-light  #e8ded6
+// =============================================================================
+
+@use './mixins';
+
+:root {
+  --app-color-navy-900: #0f1b2d;
+  --app-color-navy-800: #1a2b44;
+  --app-color-blue-600: #005fb8;
+  --app-color-blue-500: #0078d4;
+  --app-color-blue-100: #dcecff;
+  --app-color-surface-0: #f4efe9;
+  --app-color-surface-1: #fcfaf8;
+  --app-color-surface-2: #ffffff;
+  --app-color-border-strong: #d9cec4;
+  --app-color-success: #0f7b51;
+  --app-color-warning: #b45309;
+  --app-color-danger: #b42318;
+
+  /* Body: DM Sans — readable UI sans, not Inter/system-default stack */
+  --app-font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  /* Display: Fraunces — editorial weight for titles and nav brand */
+  --app-font-display: "Fraunces", "DM Sans", ui-serif, Georgia, "Times New Roman", serif;
+  --app-font-size-sm: 13.5px;
+  /* Secondary copy: #424242 at 60% opacity */
+  --app-text-muted: rgba(66, 66, 66, 0.6);
+  /* Keep in sync with MUI theme palette.primary.main */
+  --app-primary: var(--app-color-blue-500);
+  /* Keep in sync with primary left-nav background */
+  --app-left-nav-bg: #e8ded6;
+  /* Default hover bg for small icon containers */
+  --app-icon-hover-bg: var(--app-left-nav-bg);
+  /* Surfaces — keep in sync with MUI theme palette.background */
+  --app-bg-panel: var(--app-color-surface-1);
+  --app-bg-hover: #ede5dd;
+  --app-bg-active: #e3d8ce;
+  --app-border-light: #e4d9cf;
+  --app-border-strong: var(--app-color-border-strong);
+  --app-text-strong: var(--app-color-navy-900);
+  --app-text-soft: #5a5f67;
+  --app-accent-bg: var(--app-color-blue-100);
+
+  /* Toolkit grid cards + chat app-connection row — shared panel tokens */
+  --app-toolkit-panel-border: #f0eae5;
+  --app-toolkit-panel-bg: rgba(255, 255, 255, 0.85);
+  --app-toolkit-title: #11151a;
+  --app-toolkit-description: #424242;
+
+  /* Secondary left nav — list row hover/selected */
+  --app-secondary-nav-hover-thread: #e8ded6;
+  --app-secondary-nav-selected-thread: rgba(255, 255, 255, 0.7);
+  --app-secondary-nav-hover-chamber: #f9f7f5;
+  --app-secondary-nav-selected-chamber: #f9f7f5;
+  --app-secondary-nav-hover-accent: var(--app-left-nav-bg);
+  --app-secondary-nav-selected-card: #ffffff;
+  --app-secondary-nav-selected-card-border: #ebe8e4;
+  --app-secondary-nav-hover-toolkit-row: rgba(0, 0, 0, 0.03);
+
+  /* Rounded corner scale (px). Squircle smoothing applies where `corner-shape` is supported. */
+  --app-radius-xs: 10px;
+  --app-radius-sm: 12px;
+  --app-radius-md: 16px;
+  --app-radius-lg: 20px;
+  /* Large pills / docked bubbles (above `lg`). */
+  --app-radius-xl: 28px;
+  /* Briefing Paper outer `md` + 8px inset (MUI `p:1`); inner concentric curve clamps at xs. */
+  --app-briefing-paper-padding: 8px;
+  --app-radius-briefing-inner: max(var(--app-radius-xs), calc(var(--app-radius-md) - var(--app-briefing-paper-padding)));
+  /* Toolkit grid card uses `sm` outer + 12px padding — inner placeholder radius. */
+  --app-toolkit-card-outer: var(--app-radius-sm);
+  --app-toolkit-card-padding: 12px;
+  --app-radius-toolkit-inner: max(var(--app-radius-xs), calc(var(--app-toolkit-card-outer) - var(--app-toolkit-card-padding)));
+  --app-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --app-shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --app-shadow-md: 0 14px 36px rgba(15, 23, 42, 0.11);
+  --app-transition-fast: 160ms ease;
+  --app-transition-base: 220ms ease;
+}

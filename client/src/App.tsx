@@ -1,52 +1,40 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { ThemeProvider, CssBaseline } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useMemo, useState, type ReactNode } from "react";
-import { appTheme } from "./theme";
-import type { PaletteMode } from "@mui/material";
+import { Box } from "@mui/material";
+import type { ReactNode } from "react";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { AppLayout } from "./layout/AppLayout";
 import { RequireAuth } from "./routes/RequireAuth";
 import LoginPage from "./pages/Login";
 import DashboardPage from "./pages/Dashboard";
 import ProgramsPage from "./pages/Programs";
+import ProgramDetailPage from "./pages/ProgramDetail";
 import ProjectsPage from "./pages/Projects";
+import ProjectDetailPage from "./pages/ProjectDetail";
 import TestSuitesPage from "./pages/TestSuites";
 import ResultsPage from "./pages/Results";
 import UsersPage from "./pages/Users";
 import IntegrationsPage from "./pages/Integrations";
 import SearchPage from "./pages/Search";
 
+// Visual identity is light-only per Archive 6 design system. The previous
+// dark/light toggle was intentionally removed during the UI migration; the
+// MUI ThemeProvider now lives at the root in main.tsx.
+
 const qc = new QueryClient();
 
-function Shell({ children }: { children: ReactNode }): JSX.Element {
-  const [mode, setMode] = useState<PaletteMode>(() => (localStorage.getItem("th_theme") as PaletteMode) || "dark");
-  const theme = useMemo(() => appTheme(mode), [mode]);
-  const toggle = () =>
-    setMode((m) => {
-      const next = m === "dark" ? "light" : "dark";
-      localStorage.setItem("th_theme", next);
-      return next;
-    });
-
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AppLayout mode={mode} onToggleMode={toggle}>
-        {children}
-      </AppLayout>
-    </ThemeProvider>
-  );
+function Shell({ children }: { children: ReactNode }) {
+  return <AppLayout>{children}</AppLayout>;
 }
 
-function Private({ children }: { children: ReactNode }): JSX.Element {
+function Private({ children }: { children: ReactNode }) {
   const { loading, user } = useAuth();
-  if (loading) return <div style={{ padding: 24 }}>Loading…</div>;
+  if (loading) return <Box sx={{ p: 3 }}>Loading…</Box>;
   if (!user) return <Navigate to="/login" replace />;
   return <Shell>{children}</Shell>;
 }
 
-export default function App(): JSX.Element {
+export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <AuthProvider>
@@ -70,10 +58,26 @@ export default function App(): JSX.Element {
               }
             />
             <Route
+              path="/programs/:id"
+              element={
+                <Private>
+                  <ProgramDetailPage />
+                </Private>
+              }
+            />
+            <Route
               path="/projects"
               element={
                 <Private>
                   <ProjectsPage />
+                </Private>
+              }
+            />
+            <Route
+              path="/projects/:id"
+              element={
+                <Private>
+                  <ProjectDetailPage />
                 </Private>
               }
             />

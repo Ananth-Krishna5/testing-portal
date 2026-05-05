@@ -1,187 +1,214 @@
 import {
-  AppBar,
   Avatar,
   Box,
-  Chip,
-  CssBaseline,
   Divider,
   Drawer,
   IconButton,
-  InputAdornment,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   Menu,
   MenuItem,
-  TextField,
   Toolbar,
-  Tooltip,
   Typography,
 } from "@mui/material";
-import type { PaletteMode } from "@mui/material";
 import {
-  Dashboard as DashboardIcon,
-  Folder as FolderIcon,
-  Hub as HubIcon,
-  IntegrationInstructions as IntegrationIcon,
-  Logout as LogoutIcon,
-  Menu as MenuIcon,
-  People as PeopleIcon,
-  Science as ScienceIcon,
-  Search as SearchIcon,
-  Shield as ShieldIcon,
-  ViewKanban as KanbanIcon,
-  DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon,
-  NotificationsNone as NotificationsIcon,
-} from "@mui/icons-material";
+  Alert24Regular,
+  Beaker24Regular,
+  DataBarHorizontal24Regular,
+  DataPie24Regular,
+  Folder24Regular,
+  Navigation24Regular,
+  People24Regular,
+  PlugConnected24Regular,
+  Shield24Regular,
+  SignOut24Regular,
+} from "@fluentui/react-icons";
+import type { ComponentType } from "react";
 import { useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { http } from "../api/http";
+import { FluentIcon } from "../components/ui/FluentIcon";
 
-const drawerWidth = 260;
+const drawerWidth = 253;
+const rightRailWidth = 52;
 
-const nav = [
-  { to: "/", label: "Dashboard", icon: <DashboardIcon /> },
-  { to: "/programs", label: "Programs", icon: <ShieldIcon /> },
-  { to: "/projects", label: "Projects", icon: <FolderIcon /> },
-  { to: "/test-suites", label: "Test Suites", icon: <ScienceIcon /> },
-  { to: "/results", label: "Results", icon: <KanbanIcon /> },
-  { to: "/users", label: "Users", icon: <PeopleIcon /> },
-  { to: "/integrations", label: "Integrations", icon: <IntegrationIcon />, roles: ["admin", "tester"] as const },
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ComponentType<{ fontSize?: number; color?: string }>;
+  roles?: readonly ("admin" | "tester")[];
+};
+
+const navSections: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Home",
+    items: [{ to: "/", label: "Dashboard", icon: DataPie24Regular }],
+  },
+  {
+    title: "Governance",
+    items: [{ to: "/programs", label: "Programs", icon: Shield24Regular }],
+  },
+  {
+    title: "Execution",
+    items: [
+      { to: "/projects", label: "Projects", icon: Folder24Regular },
+      { to: "/test-suites", label: "Testings", icon: Beaker24Regular },
+    ],
+  },
+  {
+    title: "Insight",
+    items: [{ to: "/results", label: "Reports & AI", icon: DataBarHorizontal24Regular }],
+  },
+  {
+    title: "Administrations",
+    items: [
+      { to: "/users", label: "Users", icon: People24Regular },
+      { to: "/integrations", label: "Integrations", icon: PlugConnected24Regular, roles: ["admin", "tester"] },
+    ],
+  },
 ];
 
-export function AppLayout({
-  children,
-  mode,
-  onToggleMode,
-}: {
-  children: ReactNode;
-  mode: PaletteMode;
-  onToggleMode: () => void;
-}): JSX.Element {
+export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, can } = useAuth();
   const loc = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
-  const [search, setSearch] = useState("");
-
-  const runSearch = async () => {
-    const q = search.trim();
-    if (q.length < 2) return;
-    const { data } = await http.get("/search", { params: { q } });
-    navigate("/search", { state: data });
-    setMobileOpen(false);
-  };
+  const [alertAnchor, setAlertAnchor] = useState<null | HTMLElement>(null);
 
   const drawer = (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar sx={{ gap: 1, px: 2.5 }}>
-        <HubIcon color="primary" />
-        <Typography variant="h6">
-          Test Hub
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#F0EAE5", py: 1 }}>
+      <Toolbar sx={{ pl: 1.75, pr: 1, py: 0, minHeight: 36, alignItems: "center", justifyContent: "flex-start" }}>
+        <Typography
+          component="div"
+          sx={{
+            width: 92,
+            height: 36,
+            px: 1.75,
+            py: 1,
+            borderRadius: "8px",
+            backgroundColor: "#fff",
+            color: "#11151A",
+            fontWeight: 700,
+            fontSize: "18px",
+            lineHeight: "20px",
+            letterSpacing: "-0.5px",
+          }}
+        >
+          Testing
         </Typography>
       </Toolbar>
-      <Divider />
-      <List sx={{ flex: 1, px: 1.5, py: 2 }}>
-        {nav
-          .filter((n) => !n.roles || n.roles.some((r) => can(r as "admin" | "tester" | "viewer" | "external")))
-          .map((item) => (
-            <ListItemButton
-              key={item.to}
-              component={Link}
-              to={item.to}
-              selected={loc.pathname === item.to}
-              onClick={() => setMobileOpen(false)}
-              sx={{ mb: 0.5 }}
+      <Box sx={{ height: 12 }} />
+      <List sx={{ flex: 1, px: 1, py: 0, overflow: "auto", gap: 1, display: "flex", flexDirection: "column" }} className="app-scroll">
+        {navSections.map((section) => {
+          const visibleItems = section.items.filter(
+            (item) => !item.roles || item.roles.some((r) => can(r as "admin" | "tester" | "viewer" | "external")),
+          );
+          if (visibleItems.length === 0) return null;
+          const hasSelected = visibleItems.some((item) => loc.pathname === item.to);
+          return (
+            <Box
+              key={section.title}
+              sx={{
+                px: 0,
+                py: 0.5,
+                borderRadius: "6px",
+                backgroundColor: hasSelected ? "#F9F7F5" : "transparent",
+              }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          ))}
+              <Typography
+                sx={{
+                  px: 1.5,
+                  pb: 0.5,
+                  textTransform: "uppercase",
+                  fontSize: "11px",
+                  lineHeight: "20px",
+                  letterSpacing: "0.5px",
+                  fontWeight: 600,
+                  color: "#616161",
+                }}
+              >
+                {section.title}
+              </Typography>
+              {visibleItems.map((item) => {
+                const selected = loc.pathname === item.to;
+                return (
+                  <ListItemButton
+                    key={item.to}
+                    component={Link}
+                    to={item.to}
+                    selected={selected}
+                    onClick={() => setMobileOpen(false)}
+                    sx={{
+                      mx: 0.5,
+                      px: 1.5,
+                      py: 0,
+                      minHeight: 32,
+                      borderRadius: "6px",
+                      gap: 1.5,
+                      "&.Mui-selected": {
+                        backgroundColor: "#F0EAE5",
+                        "&:hover": { backgroundColor: "#ECE3DD" },
+                      },
+                      "&:hover": { backgroundColor: "#F3EDE8" },
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 20 }}>
+                      <FluentIcon icon={item.icon} size="nav" color={selected ? "#11151A" : "#424242"} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.label}
+                      primaryTypographyProps={{
+                        fontWeight: selected ? 700 : 400,
+                        fontSize: "12px",
+                        lineHeight: "20px",
+                        color: selected ? "#11151A" : "#424242",
+                      }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </Box>
+          );
+        })}
       </List>
-      <Divider />
-      <Box sx={{ p: 2.5 }}>
-        <Typography variant="caption" color="text.secondary">
-          Signed in as
-        </Typography>
-        <Typography sx={{ mt: 0.5 }}>{user?.name}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {user?.role}
-        </Typography>
-      </Box>
     </Box>
   );
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        elevation={0}
-        color="inherit"
+    <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#0B0E11" }}>
+      <Box sx={{ display: "flex", minHeight: "100vh", width: "100%", backgroundColor: "#F0EAE5" }}>
+      <IconButton
+        edge="start"
+        onClick={() => setMobileOpen(true)}
         sx={{
-          borderBottom: 1,
-          borderColor: "divider",
-          zIndex: (t) => t.zIndex.drawer + 1,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
+          position: "fixed",
+          top: 8,
+          left: 8,
+          zIndex: (t) => t.zIndex.drawer + 2,
+          display: { xs: "inline-flex", md: "none" },
+          bgcolor: "#fff",
+          border: "1px solid var(--app-border-light)",
+          borderRadius: "8px",
+          "&:hover": { bgcolor: "#fff" },
         }}
+        aria-label="Open menu"
       >
-        <Toolbar sx={{ gap: 1 }}>
-          <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ mr: 2, display: { md: "none" } }}>
-            <MenuIcon />
-          </IconButton>
-          <TextField
-            size="small"
-            placeholder="Global search…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            sx={{ flex: 1, maxWidth: 520 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Chip size="small" icon={<NotificationsIcon fontSize="small" />} label="Alerts" variant="outlined" sx={{ display: { xs: "none", sm: "inline-flex" } }} />
-          <Tooltip title={mode === "dark" ? "Light mode" : "Dark mode"}>
-            <IconButton onClick={onToggleMode} sx={{ ml: 1 }}>
-              {mode === "dark" ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-          <IconButton sx={{ ml: 1 }} onClick={(e) => setAnchor(e.currentTarget)}>
-            <Avatar sx={{ width: 32, height: 32 }}>{user?.name?.slice(0, 1)}</Avatar>
-          </IconButton>
-          <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
-            <MenuItem
-              onClick={() => {
-                setAnchor(null);
-                logout();
-                navigate("/login");
-              }}
-            >
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              Logout
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+        <FluentIcon icon={Navigation24Regular} size="toolbar" />
+      </IconButton>
       <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: "block", md: "none" }, "& .MuiDrawer-paper": { width: drawerWidth } }}
+          sx={{
+            display: { xs: "block", md: "none" },
+            "& .MuiDrawer-paper": { width: drawerWidth, backgroundColor: "#F0EAE5" },
+          }}
         >
           {drawer}
         </Drawer>
@@ -189,7 +216,12 @@ export function AppLayout({
           variant="permanent"
           sx={{
             display: { xs: "none", md: "block" },
-            "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+              backgroundColor: "#F0EAE5",
+              borderRight: "none",
+            },
           }}
           open
         >
@@ -197,17 +229,172 @@ export function AppLayout({
         </Drawer>
       </Box>
       <Box
-        component="main"
         sx={{
+          display: "flex",
           flexGrow: 1,
-            p: { xs: 2, md: 3 },
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
-            backgroundColor: "background.default",
-          minHeight: "100vh",
+          p: { xs: 0, md: "8px 8px 8px 0px" },
+          gap: { xs: 0, md: "4px" },
         }}
       >
-        <Box sx={{ maxWidth: 1320, mx: "auto", width: "100%" }}>{children}</Box>
+        <Box
+          component="main"
+          className="app-page-enter"
+          sx={{
+            flexGrow: 1,
+            p: { xs: 2, md: 0 },
+            width: { md: `calc(100% - ${rightRailWidth}px)` },
+            backgroundColor: "#F9F7F5",
+            minHeight: "100vh",
+            borderRadius: { xs: 0, md: "12px" },
+            overflow: "hidden",
+          }}
+        >
+          {children}
+        </Box>
+        <Box
+          component="aside"
+          sx={{
+            width: { xs: 0, md: rightRailWidth },
+            display: { xs: "none", md: "flex" },
+            justifyContent: "center",
+            alignItems: "stretch",
+            backgroundColor: "#F0EAE5",
+            flexShrink: 0,
+            pl: 0.5,
+          }}
+        >
+          <Box
+            sx={{
+              width: 48,
+              my: 0,
+              borderRadius: "12px",
+              bgcolor: "#F9F7F5",
+              boxShadow: "0px 1px 3px rgba(0,0,0,0.05)",
+              py: 1.5,
+              px: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              minHeight: "100%",
+              height: "100%",
+            }}
+          >
+            <IconButton onClick={(e) => setAnchor(e.currentTarget)} aria-label="Account menu" sx={{ p: 0 }}>
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  bgcolor: "#F0EAE5",
+                  color: "#11151A",
+                  border: "1px solid rgba(0, 0, 0, 0.12)",
+                }}
+              >
+                {user?.name?.slice(0, 1)}
+              </Avatar>
+            </IconButton>
+            <Box sx={{ py: 1, display: "flex", justifyContent: "center", width: 32 }}>
+              <Box sx={{ width: 24, height: 1, bgcolor: "rgba(0,0,0,0.12)" }} />
+            </Box>
+            <IconButton
+              onClick={(e) => setAlertAnchor(e.currentTarget)}
+              sx={{ width: 32, height: 32, borderRadius: "8px", p: "6px", position: "relative" }}
+              aria-label="Notifications"
+            >
+              <FluentIcon icon={Alert24Regular} size="inline" color="#616161" />
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  width: 14,
+                  height: 15.5,
+                  borderRadius: "7px",
+                  bgcolor: "#D13438",
+                  border: "1px solid #F9F7F5",
+                  color: "#fff",
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  lineHeight: "15px",
+                  textAlign: "center",
+                }}
+              >
+                1
+              </Box>
+            </IconButton>
+            <IconButton
+              onClick={(e) => setAlertAnchor(e.currentTarget)}
+              sx={{ width: 32, height: 32, borderRadius: "8px", p: "6px", position: "relative" }}
+              aria-label="Alerts"
+            >
+              <FluentIcon icon={DataBarHorizontal24Regular} size="inline" color="#616161" />
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  width: 14,
+                  height: 15.5,
+                  borderRadius: "7px",
+                  bgcolor: "#D13438",
+                  border: "1px solid #F9F7F5",
+                  color: "#fff",
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  lineHeight: "15px",
+                  textAlign: "center",
+                }}
+              >
+                3
+              </Box>
+            </IconButton>
+            <IconButton sx={{ width: 32, height: 32, borderRadius: "8px", p: "6px" }} aria-label="Nudges">
+              <FluentIcon icon={Shield24Regular} size="inline" color="#616161" />
+            </IconButton>
+            <Box sx={{ py: 1, display: "flex", justifyContent: "center", width: 32 }}>
+              <Box sx={{ width: 24, height: 1, bgcolor: "rgba(0,0,0,0.12)" }} />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+      <Menu anchorEl={alertAnchor} open={Boolean(alertAnchor)} onClose={() => setAlertAnchor(null)} anchorOrigin={{ vertical: "center", horizontal: "left" }} transformOrigin={{ vertical: "center", horizontal: "right" }}>
+        <ListSubheader sx={{ fontWeight: 600, lineHeight: 2 }}>Notifications</ListSubheader>
+        <MenuItem
+          disabled
+          sx={{ maxWidth: 280, whiteSpace: "normal", opacity: 0.85, fontSize: "var(--app-font-size-sm)" }}
+        >
+          Alert digests and run failures will surface here as rules are configured.
+        </MenuItem>
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            setAlertAnchor(null);
+            navigate("/results");
+          }}
+        >
+          Open results
+        </MenuItem>
+      </Menu>
+      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)} anchorOrigin={{ vertical: "center", horizontal: "left" }} transformOrigin={{ vertical: "center", horizontal: "right" }}>
+        <ListSubheader sx={{ fontWeight: 600, lineHeight: 2 }}>Account</ListSubheader>
+        <MenuItem disabled sx={{ opacity: 1, py: 0.5, fontSize: "var(--app-font-size-sm)" }}>
+          {user?.email}
+        </MenuItem>
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            setAnchor(null);
+            logout();
+            navigate("/login");
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <FluentIcon icon={SignOut24Regular} size="inline" />
+          </ListItemIcon>
+          Sign out
+        </MenuItem>
+      </Menu>
       </Box>
     </Box>
   );

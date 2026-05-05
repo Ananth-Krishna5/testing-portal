@@ -11,13 +11,35 @@ export const QUEUE_NAME = "testhub-test-runs";
 const require = createRequire(import.meta.url);
 // ioredis CJS default export — constructable at runtime; TS types disagree under NodeNext.
 const Redis = require("ioredis") as new (url: string, opts?: { maxRetriesPerRequest?: number | null }) => import("ioredis").default;
-const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 
-export const testRunQueue = new Queue(QUEUE_NAME, { connection });
+let connection: InstanceType<typeof Redis> | null = null;
+let testRunQueue: Queue | null = null;
+
+function getRedis(): InstanceType<typeof Redis> | null {
+  if (!env.ENABLE_TEST_RUN_QUEUE) return null;
+  if (!connection) {
+    connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
+  }
+  return connection;
+}
+
+function getQueue(): Queue | null {
+  const conn = getRedis();
+  if (!conn) return null;
+  if (!testRunQueue) {
+    testRunQueue = new Queue(QUEUE_NAME, { connection: conn });
+  }
+  return testRunQueue;
+}
 
 export type TestRunJobData = { runId?: string; scheduledJobId?: string };
 
-export function startTestRunWorker(): Worker {
+export function startTestRunWorker(): Worker | null {
+  const conn = getRedis();
+  if (!conn) {
+    log.info("Test run queue disabled — set ENABLE_TEST_RUN_QUEUE=true and REDIS_URL for BullMQ workers.");
+    return null;
+  }
   const worker = new Worker<TestRunJobData>(
     QUEUE_NAME,
     async (job) => {
@@ -43,7 +65,7 @@ export function startTestRunWorker(): Worker {
       }
       throw new Error("Invalid job payload");
     },
-    { connection }
+    { connection: conn }
   );
   worker.on("failed", (job, err) => {
     log.error("Job failed", job?.id, err);
@@ -52,7 +74,13 @@ export function startTestRunWorker(): Worker {
 }
 
 export async function enqueueTestRun(runId: string): Promise<void> {
-  await testRunQueue.add(
+  const q = getQueue();
+  if (!q) {
+    log.warn("Queue disabled — executing test run in-process", { runId });
+    await processTestRun(runId);
+    return;
+  }
+  await q.add(
     "execute",
     { runId },
     {
@@ -66,7 +94,12 @@ export async function enqueueTestRun(runId: string): Promise<void> {
 
 /** Register BullMQ repeatable scheduler when recurrence is a cron pattern (e.g. <code>0 9 * * *</code>). */
 export async function registerJobScheduler(scheduledJobId: string, cronPattern: string): Promise<void> {
-  await testRunQueue.upsertJobScheduler(
+  const q = getQueue();
+  if (!q) {
+    log.warn("registerJobScheduler skipped (queue disabled)", { scheduledJobId });
+    return;
+  }
+  await q.upsertJobScheduler(
     `sched-${scheduledJobId}`,
     { pattern: cronPattern },
     {
