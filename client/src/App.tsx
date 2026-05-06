@@ -12,6 +12,7 @@ import ProgramDetailPage from "./pages/ProgramDetail";
 import ProjectsPage from "./pages/Projects";
 import ProjectDetailPage from "./pages/ProjectDetail";
 import TestSuitesPage from "./pages/TestSuites";
+import TestSuiteDetailPage from "./pages/TestSuiteDetail";
 import ResultsPage from "./pages/Results";
 import UsersPage from "./pages/Users";
 import IntegrationsPage from "./pages/Integrations";
@@ -86,6 +87,14 @@ export default function App() {
               element={
                 <Private>
                   <TestSuitesPage />
+                </Private>
+              }
+            />
+            <Route
+              path="/test-suites/:id"
+              element={
+                <Private>
+                  <TestSuiteDetailPage />
                 </Private>
               }
             />

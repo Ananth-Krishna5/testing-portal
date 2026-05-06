@@ -9,6 +9,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Menu,
   MenuItem,
   ToggleButton,
   ToggleButtonGroup,
@@ -17,9 +18,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { FolderMultiple24Regular, MoreHorizontal24Regular, Search20Regular } from "@fluentui/react-icons";
+import { FolderMultiple24Regular, Search20Regular } from "@fluentui/react-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { type MouseEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { http } from "../api/http";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -44,6 +45,8 @@ export default function ProgramsPage(): JSX.Element {
     queryFn: async () => (await http.get<Program[]>("/programs")).data,
   });
   const [open, setOpen] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "risk">("all");
   const [form, setForm] = useState({
@@ -59,6 +62,20 @@ export default function ProgramsPage(): JSX.Element {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["programs"] });
       setOpen(false);
+    },
+  });
+  const pauseProgram = useMutation({
+    mutationFn: async (program: Program) => (await http.patch<Program>(`/programs/${program.id}`, { status: "paused" })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["programs"] });
+    },
+  });
+  const deleteProgram = useMutation({
+    mutationFn: async (programId: string) => {
+      await http.delete(`/programs/${programId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["programs"] });
     },
   });
 
@@ -85,6 +102,32 @@ export default function ProgramsPage(): JSX.Element {
   };
 
   const riskState = (value: number) => (value < 55 ? "At Risk" : "On Track");
+  const isMenuOpen = Boolean(menuAnchorEl);
+
+  const handleOpenMenu = (event: MouseEvent<HTMLElement>, program: Program) => {
+    event.stopPropagation();
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedProgram(program);
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setSelectedProgram(null);
+  };
+
+  const handlePauseProgram = async () => {
+    if (!selectedProgram) return;
+    await pauseProgram.mutateAsync(selectedProgram);
+    handleCloseMenu();
+  };
+
+  const handleDeleteProgram = async () => {
+    if (!selectedProgram) return;
+    const shouldDelete = window.confirm(`Delete "${selectedProgram.name}"? This action cannot be undone.`);
+    if (!shouldDelete) return;
+    await deleteProgram.mutateAsync(selectedProgram.id);
+    handleCloseMenu();
+  };
 
   return (
     <Box className="app-page-enter" sx={{ width: "100%", height: "100%", bgcolor: "#F9F7F5", borderRadius: { xs: 0, md: "12px" }, overflow: "hidden" }}>
@@ -246,13 +289,31 @@ export default function ProgramsPage(): JSX.Element {
                   ))}
                   <Typography sx={{ ml: 1, fontSize: "13px", color: "#616161" }}>+2</Typography>
                 </Stack>
-                <FluentIcon icon={MoreHorizontal24Regular} size="inline" color="#616161" />
+                <Button
+                  size="small"
+                  onClick={(event) => handleOpenMenu(event, p)}
+                  sx={{ minWidth: 56, height: 28, borderRadius: "6px", textTransform: "none", color: "#616161", fontWeight: 590, px: 1 }}
+                >
+                  Edit
+                </Button>
               </Stack>
             </CardContent>
           </Card>
         );
         })}
       </Box>
+
+      <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleCloseMenu}>
+        <MenuItem
+          onClick={handlePauseProgram}
+          disabled={!selectedProgram || pauseProgram.isPending || (selectedProgram?.status ?? "").toLowerCase() === "paused"}
+        >
+          Pause program
+        </MenuItem>
+        <MenuItem onClick={handleDeleteProgram} disabled={!selectedProgram || deleteProgram.isPending} sx={{ color: "#C62828" }}>
+          Delete program
+        </MenuItem>
+      </Menu>
       </Box>
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">

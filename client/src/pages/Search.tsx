@@ -1,9 +1,9 @@
 import { Box, Button, Divider, List, ListItemButton, ListItemText, Paper, Typography } from "@mui/material";
 import { ArrowLeft24Regular, Search24Regular } from "@fluentui/react-icons";
 import { useLocation, Link as RouterLink } from "react-router-dom";
+import { AppPageFrame } from "../components/ui/AppPageFrame";
 import { FluentIcon } from "../components/ui/FluentIcon";
 import { EmptyState } from "../components/ui/EmptyState";
-import { PageHeader } from "../components/ui/PageHeader";
 
 interface SearchState {
   programs?: { id: string; name: string }[];
@@ -19,16 +19,21 @@ export default function SearchPage(): JSX.Element {
   const total = (s.programs?.length ?? 0) + (s.projects?.length ?? 0) + (s.suites?.length ?? 0) + (s.users?.length ?? 0);
 
   return (
-    <Box className="app-page-enter">
-      <PageHeader
-        title="Search results"
-        subtitle={hasState ? "Global results grouped by module." : "Open this page from the header search to see grouped matches."}
-        action={
-          <Button component={RouterLink} to="/" variant="outlined" startIcon={<FluentIcon icon={ArrowLeft24Regular} size="inline" />}>
-            Back to dashboard
-          </Button>
-        }
-      />
+    <AppPageFrame
+      title="Search"
+      actions={
+        <Button
+          component={RouterLink}
+          to="/"
+          variant="outlined"
+          size="small"
+          startIcon={<FluentIcon icon={ArrowLeft24Regular} size="inline" />}
+          sx={{ height: 24, minHeight: 24, borderRadius: "6px", textTransform: "none", fontSize: "12px", px: 1.25 }}
+        >
+          Dashboard
+        </Button>
+      }
+    >
 
       {!hasState && (
         <EmptyState
@@ -109,6 +114,6 @@ export default function SearchPage(): JSX.Element {
           </List>
         </Paper>
       )}
-    </Box>
+    </AppPageFrame>
   );
 }

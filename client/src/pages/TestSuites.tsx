@@ -2,27 +2,21 @@ import {
   Box,
   Button,
   Card,
-  CardActions,
   CardContent,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Drawer,
-  MenuItem,
   Skeleton,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { ClipboardTaskListLtr24Regular } from "@fluentui/react-icons";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ClipboardTaskListLtr24Regular, Search20Regular } from "@fluentui/react-icons";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { http } from "../api/http";
+import { AddSuiteToProjectDialog } from "../components/testing/AddSuiteToProjectDialog";
 import { EmptyState } from "../components/ui/EmptyState";
-import { FilterBar } from "../components/ui/FilterBar";
-import { PageHeader } from "../components/ui/PageHeader";
+import { FluentIcon } from "../components/ui/FluentIcon";
 
 interface Suite {
   id: string;
@@ -39,239 +33,230 @@ interface Suite {
 const categories = ["Foundational", "AI", "Voice", "E2E", "Performance", "Security", "UX", "CI/CD"] as const;
 
 export default function TestSuitesPage(): JSX.Element {
-  const qc = useQueryClient();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [cat, setCat] = useState<string>("");
-  const [detail, setDetail] = useState<Suite | null>(null);
-  const [modal, setModal] = useState(false);
-  const [pick, setPick] = useState({ programId: "", projectId: "", suiteId: "", env: "Staging", from: "", to: "", time: "09:00", recurrence: "daily" });
+  const [cat, setCat] = useState<string>("all");
+  const [assigningSuite, setAssigningSuite] = useState<Suite | null>(null);
 
   const { data, isPending } = useQuery({
     queryKey: ["suites", q, cat],
-    queryFn: async () => (await http.get<Suite[]>("/test-suites", { params: { q, category: cat || undefined } })).data,
-  });
-  const { data: programs } = useQuery({
-    queryKey: ["programs"],
-    queryFn: async () => (await http.get<{ id: string; name: string }[]>("/programs")).data,
-  });
-  const { data: projects } = useQuery({
-    queryKey: ["projects", pick.programId],
-    queryFn: async () => (await http.get<{ id: string; name: string }[]>("/projects", { params: { programId: pick.programId } })).data,
-    enabled: Boolean(pick.programId),
+    queryFn: async () =>
+      (
+        await http.get<Suite[]>("/test-suites", {
+          params: { q, category: cat === "all" ? undefined : cat },
+        })
+      ).data,
   });
 
-  const addJob = useMutation({
-    mutationFn: async () =>
-      http.post("/scheduled-jobs", {
-        projectId: pick.projectId,
-        suiteId: pick.suiteId,
-        fromDate: pick.from,
-        toDate: pick.to,
-        time: pick.time,
-        recurrence: pick.recurrence,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["projects"] });
-      setModal(false);
-    },
-  });
-
-  const subtitle = useMemo(() => "Marketplace-style catalog with filters and suite metadata.", []);
+  const filteredSuites = useMemo(() => data ?? [], [data]);
 
   return (
-    <Box className="app-page-enter">
-      <PageHeader title="Test Suites" subtitle={subtitle} />
-      <FilterBar
-        end={
-          q || cat ? (
-            <Button variant="text" onClick={() => { setQ(""); setCat(""); }}>
+    <Box className="app-page-enter" sx={{ width: "100%", height: "100%", bgcolor: "#F9F7F5", borderRadius: { xs: 0, md: "12px" }, overflow: "hidden" }}>
+      <Box sx={{ px: 1, py: 1, borderBottom: "1px solid #F0EAE5" }}>
+        <Typography sx={{ fontSize: "12px", lineHeight: "20px", fontWeight: 700, letterSpacing: "-0.5px", color: "#11151A" }}>Testings</Typography>
+      </Box>
+      <Box sx={{ p: 1, display: "flex", flexDirection: "column", gap: 1.25 }}>
+        <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", lg: "center" } }}>
+          <Stack direction="row" spacing={0.75} sx={{ minWidth: 0, flex: 1 }}>
+            <TextField
+              size="small"
+              placeholder="Search testings"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              sx={{
+                flex: 1,
+                "& .MuiOutlinedInput-root": {
+                  height: 32,
+                  borderRadius: "8px",
+                  backgroundColor: "#F0EAE5",
+                  minWidth: { lg: 448 },
+                },
+              }}
+              slotProps={{
+                input: {
+                  startAdornment: <FluentIcon icon={Search20Regular} size="inline" color="#616161" />,
+                },
+              }}
+            />
+          </Stack>
+          {(q || cat !== "all") && (
+            <Button
+              variant="text"
+              onClick={() => {
+                setQ("");
+                setCat("all");
+              }}
+              sx={{ height: 32, minWidth: 118, borderRadius: "8px", textTransform: "none", fontWeight: 590, fontSize: "13px" }}
+            >
               Clear filters
             </Button>
-          ) : undefined
-        }
-      >
-        <TextField label="Search" value={q} onChange={(e) => setQ(e.target.value)} fullWidth />
-        <TextField select label="Category" value={cat} onChange={(e) => setCat(e.target.value)} sx={{ minWidth: 220 }}>
-          <MenuItem value="">All</MenuItem>
+          )}
+        </Stack>
+
+        <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+          <Chip
+            label="All"
+            onClick={() => setCat("all")}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              px: 0.5,
+              bgcolor: cat === "all" ? "#F0EAE5" : "#FFFFFF",
+              color: "#616161",
+              fontSize: "13px",
+              border: "1px solid #DBCFC3",
+            }}
+          />
           {categories.map((c) => (
-            <MenuItem key={c} value={c}>
-              {c}
-            </MenuItem>
+            <Chip
+              key={c}
+              label={c}
+              onClick={() => setCat(c)}
+              sx={{
+                height: 24,
+                borderRadius: "6px",
+                px: 0.5,
+                bgcolor: cat === c ? "#F0EAE5" : "#FFFFFF",
+                color: "#616161",
+                fontSize: "13px",
+                border: "1px solid #DBCFC3",
+              }}
+            />
           ))}
-        </TextField>
-      </FilterBar>
+        </Stack>
 
       {isPending && (
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3,1fr)" }, gap: 2, mb: 2 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} variant="rounded" height={200} sx={{ borderRadius: "var(--app-radius-md)" }} />
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }, gap: 1, mb: 2 }}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} variant="rounded" height={212} sx={{ borderRadius: "12px" }} />
           ))}
         </Box>
       )}
-      {!isPending && (data ?? []).length === 0 && (
+      {!isPending && filteredSuites.length === 0 && (
         <EmptyState
-          title="No suites found"
+          title="No testings found"
           message="Try broadening your search or changing the selected category."
           illustration={ClipboardTaskListLtr24Regular}
         >
-          {(q || cat) ? (
-            <Button variant="outlined" onClick={() => { setQ(""); setCat(""); }}>
+          {(q || cat !== "all") ? (
+            <Button variant="outlined" onClick={() => { setQ(""); setCat("all"); }}>
               Clear filters
             </Button>
           ) : null}
         </EmptyState>
       )}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3,1fr)" }, gap: 2 }}>
-        {(data ?? []).map((s) => (
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(303px, 303px))", gap: 1, justifyContent: "start" }}>
+        {filteredSuites.map((s) => (
           <Card
             key={s.id}
             variant="outlined"
+            onClick={() => navigate(`/test-suites/${s.id}`)}
             sx={{
-              borderRadius: "var(--app-radius-md)",
-              borderColor: "var(--app-border-light)",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.96) 100%)",
-              boxShadow: "var(--app-shadow-xs)",
+              width: 303,
+              minHeight: 206,
+              borderRadius: "12px",
+              borderColor: "#F0EAE5",
+              boxShadow: "none",
+              backgroundColor: "#fff",
+              cursor: "pointer",
             }}
           >
-            <CardContent>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{ justifyContent: "space-between", alignItems: "flex-start" }}
-              >
-                <Typography variant="h6">
+            <CardContent sx={{ px: 0.875, py: 0.875, height: "100%", display: "flex", flexDirection: "column", "&:last-child": { pb: 0.875 } }}>
+              <Box sx={{ minHeight: 62 }}>
+                <Typography sx={{ fontSize: "14px", fontWeight: 700, lineHeight: "20px", color: "#242424" }}>
                   {s.name}
                 </Typography>
-                <Chip size="small" label={s.category} sx={{ borderRadius: "var(--app-radius-xs)" }} />
-              </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {s.description}
-              </Typography>
-              <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1, flexWrap: "wrap" }}>
-                {s.tools && (
+                <Stack direction="row" spacing={0.5} sx={{ mt: 0.25, mb: 0.5, flexWrap: "wrap" }}>
                   <Chip
+                    label={s.category}
                     size="small"
-                    variant="outlined"
-                    label={s.tools}
-                    sx={{ borderRadius: "var(--app-radius-xs)" }}
+                    sx={{
+                      height: 20,
+                      borderRadius: "6px",
+                      backgroundColor: "#F9F7F5",
+                      border: "1px solid #F0EAE5",
+                      color: "#7C695A",
+                      "& .MuiChip-label": { fontSize: "11px", lineHeight: "16px", px: "6px" },
+                    }}
                   />
-                )}
-                {s.severity && (
-                  <Chip
-                    size="small"
-                    color="warning"
-                    label={s.severity}
-                    sx={{ borderRadius: "var(--app-radius-xs)" }}
-                  />
-                )}
+                  {s.severity ? (
+                    <Chip
+                      label={s.severity}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        borderRadius: "6px",
+                        backgroundColor: "#FAF9F7",
+                        border: "1px solid #FFE0E0",
+                        color: "#FF383C",
+                        "& .MuiChip-label": { fontWeight: 590, fontSize: "11px", lineHeight: "16px", px: "6px" },
+                      }}
+                    />
+                  ) : null}
+                </Stack>
+              </Box>
+
+              <Box sx={{ borderRadius: "8px", backgroundColor: "#FAF9F7", border: "1px solid #F0EAE5", p: 0.75, flex: 1, display: "flex", flexDirection: "column" }}>
+                <Typography sx={{ fontSize: "10px", lineHeight: "14px", fontWeight: 700, color: "#616161", mb: 0.35, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Description
+                </Typography>
+                <Typography sx={{ fontSize: "12px", lineHeight: "17px", color: "#474747", minHeight: 44 }}>
+                  {s.description?.trim() || "No description available"}
+                </Typography>
+                <Stack direction="row" spacing={0.375} sx={{ mt: "auto", pt: 0.5, flexWrap: "wrap" }}>
+                  {s.tools ? (
+                    <Chip
+                      size="small"
+                      label={`Tools: ${s.tools}`}
+                      sx={{ height: 18, borderRadius: "6px", backgroundColor: "#FFFFFF", border: "1px solid #F0EAE5", color: "#7C695A", "& .MuiChip-label": { fontSize: "10px", px: "5px" } }}
+                    />
+                  ) : null}
+                  {s.scope ? (
+                    <Chip
+                      size="small"
+                      label={`Scope: ${s.scope}`}
+                      sx={{ height: 18, borderRadius: "6px", backgroundColor: "#FFFFFF", border: "1px solid #F0EAE5", color: "#7C695A", "& .MuiChip-label": { fontSize: "10px", px: "5px" } }}
+                    />
+                  ) : null}
+                </Stack>
+              </Box>
+
+              <Stack direction="row" spacing={0.625} sx={{ mt: 0.75, alignItems: "center", justifyContent: "flex-end" }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    navigate(`/test-suites/${s.id}`);
+                  }}
+                  sx={{ minWidth: 86, height: 28, borderRadius: "6px", borderColor: "#DBCFC3", color: "#616161", textTransform: "none", fontSize: "12px", fontWeight: 590 }}
+                >
+                  Details
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setAssigningSuite(s);
+                  }}
+                  sx={{ minWidth: 112, height: 28, borderRadius: "6px", textTransform: "none", fontSize: "12px", fontWeight: 590 }}
+                >
+                  Add to project
+                </Button>
               </Stack>
             </CardContent>
-            <CardActions>
-              <Button onClick={() => setDetail(s)}>Details</Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setPick((p) => ({ ...p, suiteId: s.id, from: new Date().toISOString().slice(0, 10), to: new Date(Date.now() + 86400000 * 30).toISOString().slice(0, 10) }));
-                  setModal(true);
-                }}
-              >
-                Add to project
-              </Button>
-            </CardActions>
           </Card>
         ))}
       </Box>
 
-      <Drawer anchor="right" open={Boolean(detail)} onClose={() => setDetail(null)}>
-        <Box sx={{ width: 420, p: 2 }}>
-          {detail && (
-            <>
-              <Typography variant="h5" sx={{ fontWeight: 900 }}>
-                {detail.name}
-              </Typography>
-              <Typography color="text.secondary" sx={{ mt: 1 }}>
-                {detail.description}
-              </Typography>
-              <Typography sx={{ mt: 2 }} variant="subtitle2">
-                Tools / methods
-              </Typography>
-              <Typography variant="body2">{detail.tools}</Typography>
-              <Typography sx={{ mt: 2 }} variant="subtitle2">
-                Focus areas
-              </Typography>
-              <Typography variant="body2">{detail.focusAreas}</Typography>
-              <Typography sx={{ mt: 2 }} variant="subtitle2">
-                Scope
-              </Typography>
-              <Typography variant="body2">{detail.scope}</Typography>
-              <Typography sx={{ mt: 2 }} variant="subtitle2">
-                Standards
-              </Typography>
-              <Typography variant="body2">{detail.standards}</Typography>
-            </>
-          )}
-        </Box>
-      </Drawer>
-
-      <Dialog open={modal} onClose={() => setModal(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Add suite to project</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField select label="Program" value={pick.programId} onChange={(e) => setPick({ ...pick, programId: e.target.value, projectId: "" })} fullWidth>
-              {(programs ?? []).map((p) => (
-                <MenuItem key={p.id} value={p.id}>
-                  {p.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField select label="Project" value={pick.projectId} onChange={(e) => setPick({ ...pick, projectId: e.target.value })} fullWidth disabled={!pick.programId}>
-              {(projects ?? []).map((p) => (
-                <MenuItem key={p.id} value={p.id}>
-                  {p.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField select label="Environment" value={pick.env} onChange={(e) => setPick({ ...pick, env: e.target.value })} fullWidth>
-              {["Staging", "Dev", "Production", "UAT"].map((e) => (
-                <MenuItem key={e} value={e}>
-                  {e}
-                </MenuItem>
-              ))}
-            </TextField>
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="From"
-                type="date"
-                fullWidth
-                slotProps={{ inputLabel: { shrink: true } }}
-                value={pick.from}
-                onChange={(e) => setPick({ ...pick, from: e.target.value })}
-              />
-              <TextField
-                label="To"
-                type="date"
-                fullWidth
-                slotProps={{ inputLabel: { shrink: true } }}
-                value={pick.to}
-                onChange={(e) => setPick({ ...pick, to: e.target.value })}
-              />
-            </Stack>
-            <TextField label="Time" value={pick.time} onChange={(e) => setPick({ ...pick, time: e.target.value })} />
-            <TextField label="Recurrence" value={pick.recurrence} onChange={(e) => setPick({ ...pick, recurrence: e.target.value })} />
-            <Typography variant="caption" color="text.secondary">
-              Environment selection is informational here; project already defines its environment.
-            </Typography>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <Button variant="outlined" onClick={() => setModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="contained" disabled={!pick.projectId || !pick.suiteId || addJob.isPending} onClick={() => addJob.mutate()}>
-            Schedule
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AddSuiteToProjectDialog
+        open={Boolean(assigningSuite)}
+        suiteId={assigningSuite?.id ?? null}
+        suiteName={assigningSuite?.name}
+        onClose={() => setAssigningSuite(null)}
+      />
+      </Box>
     </Box>
   );
 }

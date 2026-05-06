@@ -22,8 +22,8 @@ import { People24Regular } from "@fluentui/react-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { http } from "../api/http";
+import { AppPageFrame } from "../components/ui/AppPageFrame";
 import { EmptyState } from "../components/ui/EmptyState";
-import { PageHeader } from "../components/ui/PageHeader";
 
 interface UserRow {
   id: string;
@@ -52,16 +52,19 @@ export default function UsersPage(): JSX.Element {
   });
 
   return (
-    <Box className="app-page-enter">
-      <PageHeader
-        title="Users & teams"
-        subtitle="Manage roles and workspace access."
-        action={
-          <Button variant="contained" onClick={() => setOpen(true)}>
-            Invite member
-          </Button>
-        }
-      />
+    <AppPageFrame
+      title="Users"
+      actions={
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => setOpen(true)}
+          sx={{ height: 24, minHeight: 24, borderRadius: "6px", textTransform: "none", fontSize: "12px", px: 1.25 }}
+        >
+          Invite member
+        </Button>
+      }
+    >
       {isPending ? (
         <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: "var(--app-radius-md)", borderColor: "var(--app-border-light)" }}>
           <Table size="small">
@@ -159,6 +162,6 @@ export default function UsersPage(): JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </AppPageFrame>
   );
 }

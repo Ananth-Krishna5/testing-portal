@@ -7,12 +7,17 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:agent": "node scripts/dev-agent.mjs",
+    "dev:full": "concurrently -n server,client,agent -c blue,green,magenta \"npm run dev -w server\" \"npm run dev -w client\" \"npm run dev:agent\"",
+    "dev:clean-ports": "kill-port 3002 5173 8000",
+    "dev:full:clean": "npm run dev:clean-ports && npm run dev:full",
     "build": "npm run build -w server && npm run build -w client",
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",
     "lint": "npm run lint -w server && npm run lint -w client"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "kill-port": "^2.0.1"
   }
 }

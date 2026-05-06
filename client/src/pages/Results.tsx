@@ -18,9 +18,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { http } from "../api/http";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AppPageFrame } from "../components/ui/AppPageFrame";
 import { EmptyState } from "../components/ui/EmptyState";
 import { FilterBar } from "../components/ui/FilterBar";
-import { PageHeader } from "../components/ui/PageHeader";
 
 interface TestResultRow {
   id: string;
@@ -62,8 +62,7 @@ export default function ResultsPage(): JSX.Element {
   } as const;
 
   return (
-    <Box className="app-page-enter">
-      <PageHeader title="Results" subtitle="Execution outcomes, distribution, and failure signals." />
+    <AppPageFrame title="Reports & AI">
       <FilterBar
         end={
           status ? (
@@ -179,6 +178,6 @@ export default function ResultsPage(): JSX.Element {
           </Table>
         </TableContainer>
       )}
-    </Box>
+    </AppPageFrame>
   );
 }

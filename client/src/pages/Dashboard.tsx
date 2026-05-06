@@ -25,8 +25,8 @@ import { useEffect, useState } from "react";
 import { http, wsUrl } from "../api/http";
 import { useAuth } from "../auth/AuthContext";
 import { AiChatPanel } from "../components/AiChatPanel";
+import { AppPageFrame } from "../components/ui/AppPageFrame";
 import { MetricCard } from "../components/ui/MetricCard";
-import { PageHeader } from "../components/ui/PageHeader";
 import { SectionShell } from "../components/ui/SectionShell";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -84,24 +84,23 @@ export default function DashboardPage(): JSX.Element {
   } as const;
 
   return (
-    <Box className="app-page-enter">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Portfolio performance and execution signals."
-        action={
-          live ? (
-            <Chip
-              color="primary"
-              variant="outlined"
-              sx={{ borderRadius: "var(--app-radius-xs)", alignSelf: { xs: "stretch", sm: "center" } }}
-              label={`Live · ${live}`}
-              onDelete={() => setLive(null)}
-            />
-          ) : isPending ? (
-            <Skeleton variant="rounded" width={160} height={32} sx={{ borderRadius: "var(--app-radius-xs)" }} />
-          ) : null
-        }
-      />
+    <AppPageFrame
+      title="Dashboard"
+      actions={
+        live ? (
+          <Chip
+            color="primary"
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: "6px" }}
+            label={`Live · ${live}`}
+            onDelete={() => setLive(null)}
+          />
+        ) : isPending ? (
+          <Skeleton variant="rounded" width={120} height={24} sx={{ borderRadius: "6px" }} />
+        ) : null
+      }
+    >
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 2 }}>
         <Box>
           <Stack spacing={2}>
@@ -248,6 +247,6 @@ export default function DashboardPage(): JSX.Element {
           <AiChatPanel />
         </Box>
       </Box>
-    </Box>
+    </AppPageFrame>
   );
 }

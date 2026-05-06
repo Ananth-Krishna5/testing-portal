@@ -161,11 +161,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     </ListItemIcon>
                     <ListItemText
                       primary={item.label}
-                      primaryTypographyProps={{
-                        fontWeight: selected ? 700 : 400,
-                        fontSize: "12px",
-                        lineHeight: "20px",
-                        color: selected ? "#11151A" : "#424242",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontWeight: selected ? 700 : 400,
+                            fontSize: "12px",
+                            lineHeight: "20px",
+                            color: selected ? "#11151A" : "#424242",
+                          },
+                        },
                       }}
                     />
                   </ListItemButton>

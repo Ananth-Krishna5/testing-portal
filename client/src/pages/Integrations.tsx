@@ -21,8 +21,8 @@ import { Clipboard24Regular, PlugConnected24Regular } from "@fluentui/react-icon
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { http } from "../api/http";
+import { AppPageFrame } from "../components/ui/AppPageFrame";
 import { FluentIcon } from "../components/ui/FluentIcon";
-import { PageHeader } from "../components/ui/PageHeader";
 import { SectionShell } from "../components/ui/SectionShell";
 
 interface Settings {
@@ -80,8 +80,7 @@ export default function IntegrationsPage(): JSX.Element {
   };
 
   return (
-    <Box className="app-page-enter">
-      <PageHeader title="Integrations" subtitle="Configure support desk bridging and monitor delivery health." />
+    <AppPageFrame title="Integrations">
       <SectionShell
         title="Support Desk connection"
         description="Configuration, health checks, and automated ticketing preferences."
@@ -196,6 +195,6 @@ export default function IntegrationsPage(): JSX.Element {
           </Table>
         </TableContainer>
       </Paper>
-    </Box>
+    </AppPageFrame>
   );
 }
