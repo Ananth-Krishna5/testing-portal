@@ -1,8 +1,28 @@
-import { Box, Button, Stack, Switch, TextField, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Chip } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  Paper,
+  Skeleton,
+  Stack,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { Clipboard24Regular, PlugConnected24Regular } from "@fluentui/react-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { http } from "../api/http";
-import { PageHeader } from "../components/ui/PageHeader";
+import { AppPageFrame } from "../components/ui/AppPageFrame";
+import { FluentIcon } from "../components/ui/FluentIcon";
 import { SectionShell } from "../components/ui/SectionShell";
 
 interface Settings {
@@ -24,11 +44,11 @@ interface BridgeRow {
 
 export default function IntegrationsPage(): JSX.Element {
   const qc = useQueryClient();
-  const { data } = useQuery({
+  const { data, isPending: settingsPending } = useQuery({
     queryKey: ["integration-settings"],
     queryFn: async () => (await http.get<Settings>("/integrations/settings")).data,
   });
-  const { data: logs } = useQuery({
+  const { data: logs, isPending: logsPending } = useQuery({
     queryKey: ["bridge-log"],
     queryFn: async () => (await http.get<BridgeRow[]>("/integrations/bridge-log")).data,
   });
@@ -49,18 +69,57 @@ export default function IntegrationsPage(): JSX.Element {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["integration-settings"] }),
   });
 
+  const copyUrl = async (): Promise<void> => {
+    const u = form.supportDeskUrl?.trim();
+    if (!u) return;
+    try {
+      await navigator.clipboard.writeText(u);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
-    <Box>
-      <PageHeader title="Integrations" subtitle="Configure support desk bridging and monitor delivery health." />
-      <SectionShell title="Support Desk connection" description="Configuration, health checks, and automated ticketing preferences.">
-        <Stack spacing={2} maxWidth={720}>
-          <TextField
-            label="Support Desk base URL"
-            fullWidth
-            value={form.supportDeskUrl ?? ""}
-            onChange={(e) => setForm({ ...form, supportDeskUrl: e.target.value })}
-          />
-          <Stack direction="row" spacing={2} alignItems="center">
+    <AppPageFrame title="Integrations">
+      <SectionShell
+        title="Support Desk connection"
+        description="Configuration, health checks, and automated ticketing preferences."
+        icon={PlugConnected24Regular}
+      >
+        <Stack spacing={2} sx={{ maxWidth: 720 }}>
+          {settingsPending ? (
+            <>
+              <Skeleton variant="rounded" height={56} />
+              <Skeleton variant="rounded" height={40} width="50%" />
+              <Stack direction="row" spacing={1}>
+                <Skeleton variant="rounded" width={100} height={36} />
+                <Skeleton variant="rounded" width={120} height={36} />
+              </Stack>
+            </>
+          ) : (
+            <>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "flex-start" }}>
+            <TextField
+              label="Support Desk base URL"
+              fullWidth
+              value={form.supportDeskUrl ?? ""}
+              onChange={(e) => setForm({ ...form, supportDeskUrl: e.target.value })}
+              placeholder="https://support.example.com"
+            />
+            <Tooltip title="Copy URL">
+              <span>
+                <IconButton
+                  aria-label="Copy support desk URL"
+                  onClick={() => void copyUrl()}
+                  disabled={!form.supportDeskUrl?.trim()}
+                  sx={{ mt: { xs: 0, sm: 0.5 } }}
+                >
+                  <FluentIcon icon={Clipboard24Regular} size="inline" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+          <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
             <Typography>Auto-create tickets globally</Typography>
             <Switch checked={Boolean(form.autoTicketGlobal)} onChange={(_, v) => setForm({ ...form, autoTicketGlobal: v })} />
           </Stack>
@@ -78,13 +137,32 @@ export default function IntegrationsPage(): JSX.Element {
           <Typography variant="body2" color="text.secondary">
             Tickets created (counter): {form.ticketsCreatedCount ?? 0} · Bridge errors: {form.bridgeErrorCount ?? 0}
           </Typography>
+            </>
+          )}
         </Stack>
       </SectionShell>
 
-      <Paper sx={{ p: 2, mt: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+      <Paper
+        sx={{
+          p: 2,
+          mt: 2,
+          borderRadius: "var(--app-radius-md)",
+          border: "1px solid var(--app-border-light)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.96) 100%)",
+          boxShadow: "var(--app-shadow-xs)",
+        }}
+      >
+        <Stack
+          direction="row"
+          sx={{ mb: 1.5, justifyContent: "space-between", alignItems: "center" }}
+        >
           <Typography variant="h6">Ticket bridge audit log</Typography>
-          <Chip size="small" label={`${logs?.length ?? 0} entries`} variant="outlined" />
+          <Chip
+            size="small"
+            label={`${logs?.length ?? 0} entries`}
+            variant="outlined"
+            sx={{ borderRadius: "var(--app-radius-xs)" }}
+          />
         </Stack>
         <TableContainer>
           <Table size="small">
@@ -96,17 +174,27 @@ export default function IntegrationsPage(): JSX.Element {
               </TableRow>
             </TableHead>
             <TableBody>
-              {(logs ?? []).map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell>{new Date(l.createdAt).toLocaleString()}</TableCell>
-                  <TableCell>{l.sdTicketId}</TableCell>
-                  <TableCell>{l.result?.testName}</TableCell>
-                </TableRow>
-              ))}
+              {logsPending ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={3}>
+                      <Skeleton />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                (logs ?? []).map((l) => (
+                  <TableRow key={l.id} hover>
+                    <TableCell>{new Date(l.createdAt).toLocaleString()}</TableCell>
+                    <TableCell>{l.sdTicketId}</TableCell>
+                    <TableCell>{l.result?.testName}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
       </Paper>
-    </Box>
+    </AppPageFrame>
   );
 }

@@ -1,11 +1,16 @@
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 import asyncpg
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
 app = FastAPI(title="Test Hub AI Agent", version="1.0.0")
+
+# Local dev: load environment variables from repository root .env.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class ChatRequest(BaseModel):
@@ -67,21 +72,33 @@ async def chat(body: ChatRequest):
         )
         return ChatResponse(reply=reply)
 
+    llm_base_url = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+
     try:
         import httpx
 
         payload = {
-            "model": "gpt-4o-mini",
+            "model": llm_model,
             "messages": [
                 {"role": "system", "content": "Be concise. Prefer bullet points. Never invent counts; use provided numbers only."},
                 {"role": "user", "content": base},
             ],
             "temperature": 0.2,
         }
+        headers = {"Authorization": f"Bearer {api_key}"}
+        # OpenRouter can use OpenAI-compatible chat completions with optional attribution headers.
+        if "openrouter.ai" in llm_base_url:
+            site_url = os.getenv("LLM_SITE_URL", "").strip()
+            app_name = os.getenv("LLM_APP_NAME", "Test Hub AI Agent").strip()
+            if site_url:
+                headers["HTTP-Referer"] = site_url
+            if app_name:
+                headers["X-Title"] = app_name
         async with httpx.AsyncClient(timeout=60) as client:
             r = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}"},
+                f"{llm_base_url}/chat/completions",
+                headers=headers,
                 json=payload,
             )
             r.raise_for_status()

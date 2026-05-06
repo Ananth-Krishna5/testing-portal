@@ -1,0 +1,122 @@
+// Global resets, base body styles, and shared keyframes.
+// Token layer lives in tokens.scss (auto-imported here).
+
+@use './tokens';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 100% continuous-corner smoothing (Apple-like); no effect when border-radius is 0. */
+@supports (corner-shape: squircle) {
+  *,
+  *::before,
+  *::after {
+    corner-shape: squircle;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--app-font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--app-text-strong);
+  background:
+    radial-gradient(1200px circle at 8% -8%, rgba(0, 120, 212, 0.06), transparent 60%),
+    radial-gradient(900px circle at 100% 0%, rgba(30, 64, 175, 0.05), transparent 45%),
+    var(--app-color-surface-0);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--app-font-display);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Thin themed scrollbars — keep visible for usability (tables, chat, main) */
+html {
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+  scrollbar-width: thin;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+  background-clip: padding-box;
+}
+
+/* Scrollable regions inside the app (apply class on overflow containers) */
+.app-scroll {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-width: thin;
+}
+
+.app-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* One coordinated entrance for main surfaces (use on page root or sections) */
+.app-page-enter {
+  animation: chat-assistant-reveal 0.42s ease-out both;
+}
+
+.app-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1px solid var(--app-border-light);
+  box-shadow: var(--app-shadow-xs);
+}
+
+.app-page-enter-delayed {
+  animation: chat-assistant-reveal 0.5s ease-out 0.06s both;
+}
+
+.app-blank {
+  min-height: 100vh;
+  background: #f0eae5;
+}
+
+/* Shared entrance motion (chat assistant reveal pattern from Archive 6) */
+@keyframes chat-assistant-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -4,11 +4,14 @@ import {
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { PersonCircle24Regular } from "@fluentui/react-icons";
+import { FluentIcon } from "../components/ui/FluentIcon";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
@@ -49,7 +52,7 @@ export default function LoginPage(): JSX.Element {
           display: { xs: "none", md: "block" },
           position: "relative",
           overflow: "hidden",
-          background: "linear-gradient(140deg, #070b19 0%, #0f1630 42%, #121b37 100%)",
+          background: "linear-gradient(145deg, #101c2f 0%, #1a2b44 48%, #223a5d 100%)",
         }}
       >
         <Box
@@ -57,7 +60,7 @@ export default function LoginPage(): JSX.Element {
             position: "absolute",
             inset: -120,
             background:
-              "radial-gradient(360px circle at 25% 20%, rgba(110, 97, 255, 0.35), transparent 70%), radial-gradient(500px circle at 70% 72%, rgba(32, 201, 207, 0.24), transparent 70%)",
+              "radial-gradient(360px circle at 25% 20%, rgba(0, 120, 212, 0.35), transparent 70%), radial-gradient(500px circle at 70% 72%, rgba(80, 145, 255, 0.2), transparent 70%)",
             transform: `translate(${pointer.x * -18}px, ${pointer.y * -16}px)`,
             transition: "transform 140ms ease-out",
           }}
@@ -118,21 +121,73 @@ export default function LoginPage(): JSX.Element {
           </Typography>
         </Box>
       </Box>
-      <Box display="flex" alignItems="center" justifyContent="center" p={{ xs: 2, md: 4 }}>
-        <Card elevation={0} sx={{ width: "100%", maxWidth: 440 }}>
-          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-            <Typography variant="h4" gutterBottom>
-              Sign in
-            </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              Access your testing workspace.
-            </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: { xs: 2, md: 4 },
+        }}
+      >
+        <Card
+          elevation={0}
+          sx={{
+            width: "100%",
+            maxWidth: 440,
+            borderRadius: "var(--app-radius-md)",
+            border: "1px solid var(--app-border-light)",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.98) 100%)",
+            boxShadow: "var(--app-shadow-md)",
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, md: 4 } }} className="app-page-enter">
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+              <FluentIcon icon={PersonCircle24Regular} size="toolbar" color="var(--mui-palette-primary-main)" />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontFamily: "var(--app-font-display)",
+                    fontWeight: 600,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Sign in
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Access your testing workspace.
+                </Typography>
+              </Box>
+            </Stack>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            <Stack spacing={2}>
-              <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} fullWidth autoComplete="username" />
-              <TextField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} fullWidth autoComplete="current-password" onKeyDown={(e) => e.key === "Enter" && submit()} />
-              <Button variant="contained" size="large" disabled={busy} onClick={submit}>
-                {busy ? "Signing in..." : "Continue"}
+            <Stack spacing={2} component="form" noValidate autoComplete="on" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+              <TextField
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                fullWidth
+                autoComplete="username"
+                inputProps={{ "aria-label": "Email address" }}
+              />
+              <TextField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                fullWidth
+                autoComplete="current-password"
+                inputProps={{ "aria-label": "Password" }}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={busy}
+                sx={{ mt: 0.5, py: 1.25 }}
+              >
+                {busy ? <CircularProgress size={22} color="inherit" aria-label="Signing in" /> : "Continue"}
               </Button>
             </Stack>
           </CardContent>
