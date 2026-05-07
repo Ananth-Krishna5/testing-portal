@@ -70,7 +70,7 @@ enum SuiteSeverity {
 
 model Program {
   id              String        @id @default(uuid())
-  name            String
+  name            String        @unique
   description     String?
   manager         String?
   budget          Decimal?      @db.Decimal(14, 2)
@@ -106,7 +106,7 @@ model Roadmap {
 model Project {
   id                 String         @id @default(uuid())
   programId          String         @map("program_id")
-  name               String
+  name               String         @unique
   description        String?
   targetProduct      String         @map("target_product")
   environment        String

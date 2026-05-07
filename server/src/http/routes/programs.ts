@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
@@ -39,20 +40,27 @@ programsRouter.post("/", requireRole("admin", "tester"), async (req, res) => {
   const parsed = programBody.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const d = parsed.data;
-  const row = await prisma.program.create({
-    data: {
-      name: d.name,
-      description: d.description,
-      manager: d.manager,
-      budget: d.budget,
-      certAgency: d.certAgency,
-      startDate: d.startDate ? new Date(d.startDate) : undefined,
-      targetEndDate: d.targetEndDate ? new Date(d.targetEndDate) : undefined,
-      roadmapId: d.roadmapId ?? undefined,
-      status: d.status,
-    },
-  });
-  res.status(201).json(row);
+  try {
+    const row = await prisma.program.create({
+      data: {
+        name: d.name,
+        description: d.description,
+        manager: d.manager,
+        budget: d.budget,
+        certAgency: d.certAgency,
+        startDate: d.startDate ? new Date(d.startDate) : undefined,
+        targetEndDate: d.targetEndDate ? new Date(d.targetEndDate) : undefined,
+        roadmapId: d.roadmapId ?? undefined,
+        status: d.status,
+      },
+    });
+    res.status(201).json(row);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return res.status(409).json({ error: "Program name already exists" });
+    }
+    throw error;
+  }
 });
 
 programsRouter.patch("/:id", requireRole("admin", "tester"), async (req, res) => {
@@ -69,7 +77,10 @@ programsRouter.patch("/:id", requireRole("admin", "tester"), async (req, res) =>
       },
     });
     res.json(row);
-  } catch {
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return res.status(409).json({ error: "Program name already exists" });
+    }
     res.status(404).json({ error: "Not found" });
   }
 });

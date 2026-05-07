@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
@@ -38,8 +39,15 @@ const projectBody = z.object({
 projectsRouter.post("/", requireRole("admin", "tester"), async (req, res) => {
   const parsed = projectBody.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const row = await prisma.project.create({ data: parsed.data });
-  res.status(201).json(row);
+  try {
+    const row = await prisma.project.create({ data: parsed.data });
+    res.status(201).json(row);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return res.status(409).json({ error: "Project name already exists" });
+    }
+    throw error;
+  }
 });
 
 projectsRouter.patch("/:id", requireRole("admin", "tester"), async (req, res) => {
@@ -48,7 +56,10 @@ projectsRouter.patch("/:id", requireRole("admin", "tester"), async (req, res) =>
   try {
     const row = await prisma.project.update({ where: { id: String(req.params["id"]) }, data: parsed.data });
     res.json(row);
-  } catch {
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return res.status(409).json({ error: "Project name already exists" });
+    }
     res.status(404).json({ error: "Not found" });
   }
 });
